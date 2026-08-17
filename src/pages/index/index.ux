@@ -1,0 +1,56 @@
+<template>
+  <div class="demo-page">
+    <text class="title">正在识别设备屏幕</text>
+  </div>
+</template>
+
+<script>
+import router from "@system.router"
+import device from "@system.device"
+
+export default {
+  onInit() {
+    device.getInfo({
+      success: (info) => {
+        if (info.screenWidth === 432 && info.screenHeight === 514) {
+          router.replace({
+            uri: "/pages/5/home"
+          })
+        } else if (info.screenWidth === 480 && info.screenHeight === 480) {
+          router.replace({
+            uri: "/pages/s5/home"
+          })
+        } else if (info.screenWidth === 466 && info.screenHeight === 466) {
+          router.replace({
+            uri: "/pages/s4"
+          })
+        } else {
+          router.replace({
+            uri: "/pages/detail"
+          })
+        }
+      },
+      fail: () => {
+        router.replace({
+          uri: "/pages/detail"
+        })
+      }
+    })
+  }
+}
+</script>
+
+<style>
+.demo-page {
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: #000000;
+}
+
+.title {
+  font-size: 20px;
+  text-align: center;
+  color: #ffffff;
+}
+</style>

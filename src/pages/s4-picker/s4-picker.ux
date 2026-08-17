@@ -1,0 +1,191 @@
+<template>
+  <div class="picker-page">
+    <text class="clock-label">{{ time }}</text>
+    <text class="page-title">设置时长</text>
+
+    <div class="picker-stage">
+      <picker
+        class="duration-picker"
+        type="text"
+        range="{{durations}}"
+        selected="{{selectedIndex}}"
+        onchange="onDurationChange"
+      ></picker>
+    </div>
+
+    <div class="confirm-button" onclick="confirmPicker">
+      <image class="button-background" src="/common/icons/button.png"></image>
+      <image class="check-icon" src="/common/icons/check.png"></image>
+    </div>
+  </div>
+</template>
+
+<script>
+import router from "@system.router"
+import file from "@system.file"
+
+export default {
+  protected: {
+    duration: "m:20"
+  },
+
+  private: {
+    time: "00:00",
+    timer: null,
+    durations: [
+      "5秒", "5分钟", "20分钟", "40分钟", "1小时", "2小时",
+      "5秒", "5分钟", "20分钟", "40分钟", "1小时", "2小时",
+      "5秒", "5分钟", "20分钟", "40分钟", "1小时", "2小时",
+      "5秒", "5分钟", "20分钟", "40分钟", "1小时", "2小时",
+      "5秒", "5分钟", "20分钟", "40分钟", "1小时", "2小时"
+    ],
+    selectedIndex: 20,
+    selectedDuration: 1200,
+    selectedDurationConfig: "m:20"
+  },
+
+  onInit() {
+    this.selectedIndex = this.indexForDuration(this.duration)
+    this.selectedDuration = this.durationValue(this.durations[this.selectedIndex])
+    this.selectedDurationConfig = this.durationConfig(this.durations[this.selectedIndex])
+    this.updateTime()
+    this.timer = setInterval(() => this.updateTime(), 1000)
+  },
+
+  onDestroy() {
+    if (this.timer) {
+      clearInterval(this.timer)
+      this.timer = null
+    }
+  },
+
+  updateTime() {
+    const now = new Date()
+    const pad = (value) => (value < 10 ? `0${value}` : `${value}`)
+
+    this.time = `${pad(now.getHours())}:${pad(now.getMinutes())}`
+  },
+
+  onDurationChange(event) {
+    this.selectedIndex = event.newSelected
+    const label = this.durations[event.newSelected] || event.newValue
+    this.selectedDuration = this.durationValue(label)
+    this.selectedDurationConfig = this.durationConfig(label)
+  },
+
+  confirmPicker() {
+    file.writeText({
+      uri: "internal://files/focus-duration.txt",
+      text: this.selectedDurationConfig,
+      success: () => router.back(),
+      fail: () => router.back()
+    })
+  },
+
+  durationValue(label) {
+    if (label === "5秒") {
+      return 5
+    }
+    if (label === "1小时") {
+      return 60
+    }
+    if (label === "2小时") {
+      return 120
+    }
+    return parseInt(label, 10)
+  },
+
+  durationConfig(label) {
+    return label === "5秒" ? "s:5" : `m:${this.durationValue(label)}`
+  },
+
+  indexForDuration(config) {
+    const labels = ["s:5", "m:5", "m:20", "m:40", "m:60", "m:120"]
+    const legacyConfig = config && config.indexOf(":") < 0
+      ? `m:${config}`
+      : config
+    const offset = labels.indexOf(legacyConfig)
+    return 12 + (offset >= 0 ? offset : 2)
+  },
+
+}
+</script>
+
+<style>
+.picker-page {
+  position: relative;
+  width: 466px;
+  height: 466px;
+  background-color: #000000;
+}
+
+.clock-label {
+  position: absolute;
+  left: 169px;
+  top: 0px;
+  width: 130px;
+  height: 45px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 33.6px;
+  text-align: center;
+}
+
+.page-title {
+  position: absolute;
+  left: 107px;
+  top: 34px;
+  width: 255px;
+  height: 45px;
+  color: #ffffff;
+  font-size: 30px;
+  font-weight: 500;
+  line-height: 44.8px;
+  text-align: center;
+}
+
+.duration-picker {
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  width: 228px;
+  height: 162px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 40px;
+  selected-color: #ffffff;
+  selected-font-size: 40px;
+}
+
+.picker-stage {
+  position: absolute;
+  left: 119px;
+  top: 152px;
+  width: 228px;
+  height: 162px;
+}
+
+.confirm-button {
+  position: absolute;
+  left: 158px;
+  top: 391px;
+  width: 151px;
+  height: 69px;
+}
+
+.button-background {
+  position: absolute;
+  left: 0px;
+  top: 0px;
+  width: 151px;
+  height: 69px;
+}
+
+.check-icon {
+  position: absolute;
+  left: 56px;
+  top: 16px;
+  width: 38px;
+  height: 38px;
+}
+</style>

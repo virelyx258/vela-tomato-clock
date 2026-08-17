@@ -1,0 +1,214 @@
+<template>
+  <div class="home-page">
+    <text class="clock-label">{{ time }}</text>
+    <text class="page-title">欢迎使用</text>
+
+    <image class="logo" src="/common/logo.png"></image>
+    <text class="main-title">番茄钟</text>
+    <div class="settings-entry" onclick="openPicker">
+      <text class="settings-label">设置时长</text>
+      <image class="chevron" src="/common/icons/MdiChevronRight.png"></image>
+    </div>
+
+    <div class="start-button" onclick="startTimer">
+      <image class="button-background" src="/common/icons/button.png"></image>
+      <image class="play-icon" src="/common/icons/MdiPlay.png"></image>
+    </div>
+  </div>
+</template>
+
+<script>
+import router from "@system.router"
+import file from "@system.file"
+
+export default {
+  private: {
+    time: "00:00",
+    timer: null,
+    duration: 20
+  },
+
+  onInit() {
+    this.loadDuration()
+    this.updateTime()
+    this.timer = setInterval(() => this.updateTime(), 1000)
+  },
+
+  onDestroy() {
+    if (this.timer) {
+      clearInterval(this.timer)
+      this.timer = null
+    }
+  },
+
+  updateTime() {
+    const now = new Date()
+    const pad = (value) => (value < 10 ? `0${value}` : `${value}`)
+
+    this.time = `${pad(now.getHours())}:${pad(now.getMinutes())}`
+  },
+
+  openPicker() {
+    file.readText({
+      uri: "internal://files/focus-duration.txt",
+      success: (data) => {
+        this.openPickerWithDuration(data.text || "m:20")
+      },
+      fail: () => {
+        this.openPickerWithDuration("m:20")
+      }
+    })
+  },
+
+  openPickerWithDuration(duration) {
+    router.push({
+      uri: "/pages/s4-picker",
+      params: {
+        duration: `${duration}`
+      }
+    })
+  },
+
+  startTimer() {
+    file.readText({
+      uri: "internal://files/focus-duration.txt",
+      success: (data) => {
+        this.openTimer(data.text || "m:20")
+      },
+      fail: () => {
+        this.openTimer("m:20")
+      }
+    })
+  },
+
+  openTimer(duration) {
+    router.push({
+      uri: "/pages/s4-timer",
+      params: {
+        duration: duration
+      }
+    })
+  },
+
+  loadDuration() {
+    file.readText({
+      uri: "internal://files/focus-duration.txt",
+      success: (data) => {
+        if (data.text) {
+          this.duration = data.text
+        }
+      },
+      fail: () => {
+        this.duration = "m:20"
+      }
+    })
+  }
+}
+</script>
+
+<style>
+.home-page {
+  position: relative;
+  width: 466px;
+  height: 466px;
+  background-color: #000000;
+}
+
+.clock-label {
+  position: absolute;
+  left: 169px;
+  top: 0px;
+  width: 130px;
+  height: 45px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 33.6px;
+  text-align: center;
+}
+
+.page-title {
+  position: absolute;
+  left: 107px;
+  top: 34px;
+  width: 255px;
+  height: 45px;
+  color: #ffffff;
+  font-size: 30px;
+  font-weight: 500;
+  line-height: 44.8px;
+  text-align: center;
+}
+
+.logo {
+  position: absolute;
+  left: 170px;
+  top: 121px;
+  width: 128px;
+  height: 128px;
+}
+
+.main-title {
+  position: absolute;
+  left: 124px;
+  top: 255px;
+  width: 220px;
+  height: 54px;
+  color: #ffffff;
+  font-size: 40px;
+  font-weight: 500;
+  line-height: 53.04px;
+  text-align: center;
+}
+
+.settings-entry {
+  position: absolute;
+  left: 170px;
+  top: 309px;
+  width: 135px;
+  height: 36px;
+  opacity: 0.6;
+}
+
+.settings-label {
+  width: 114px;
+  height: 36px;
+  color: #ffffff;
+  font-size: 28px;
+  font-weight: 500;
+  line-height: 37.13px;
+  text-align: center;
+}
+
+.chevron {
+  position: absolute;
+  left: 114px;
+  top: 7px;
+  width: 21px;
+  height: 21px;
+}
+
+.start-button {
+  position: absolute;
+  left: 158px;
+  top: 391px;
+  width: 151px;
+  height: 69px;
+}
+
+.button-background {
+  position: absolute;
+  left: 0px;
+  top: 0px;
+  width: 151px;
+  height: 69px;
+}
+
+.play-icon {
+  position: absolute;
+  left: 53px;
+  top: 13px;
+  width: 38px;
+  height: 38px;
+}
+</style>

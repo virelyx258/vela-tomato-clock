@@ -1,0 +1,17 @@
+<script>
+import audio from "@system.audio"
+
+export default {
+  onCreate() {
+    audio.src = "/common/blank.wav"
+    audio.loop = true
+    audio.volume = 0
+    audio.play()
+    console.log("app created")
+  },
+  onDestroy() {
+    audio.stop()
+    console.log("app destroyed")
+  }
+}
+</script>

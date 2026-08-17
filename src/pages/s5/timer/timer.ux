@@ -1,0 +1,283 @@
+<template>
+  <swiper class="timer-swiper" vertical="true" indicator="false" loop="false">
+    <div class="timer-page">
+      <text class="clock-label">{{ time }}</text>
+      <text class="page-title">{{isResting ? "休息中" : "专注中"}}</text>
+      <text class="countdown">{{ countdown }}</text>
+      <text class="focus-label">{{isResting ? "休息中" : "专注中"}}</text>
+      <div class="stop-button" onclick="stopTimer">
+        <image class="button-background" src="/common/icons/button_grey.png"></image>
+        <image class="stop-icon" src="/common/icons/stop.png"></image>
+      </div>
+      <div class="pause-button" onclick="togglePause">
+        <image class="button-background" src="{{isResting ? '/common/icons/button_yellow.png' : '/common/icons/button2.png'}}"></image>
+        <image class="pause-icon" src="{{paused ? '/common/icons/MdiPlay.png' : '/common/icons/pause.png'}}"></image>
+      </div>
+    </div>
+    <div class="stats-page">
+      <text class="clock-label">{{ time }}</text>
+      <text class="page-title">专注统计</text>
+      <text class="stats-title focus-title">累计专注</text>
+      <text class="stats-value focus-value">{{ focusTotalText }}</text>
+      <text class="stats-title rest-title">累计休息</text>
+      <text class="stats-value rest-value">{{ restTotalText }}</text>
+    </div>
+  </swiper>
+</template>
+
+<script>
+import router from "@system.router"
+import file from "@system.file"
+import vibrator from "@system.vibrator"
+
+export default {
+  protected: { duration: "m:20" },
+  private: {
+    time: "00:00", countdown: "20:00", clockTimer: null, countdownTimer: null,
+    remaining: 1200, paused: false, isResting: false, focusDurationSeconds: 1200,
+    focusTotalSeconds: 0, restTotalSeconds: 0,
+    focusTotalText: "00:00:00", restTotalText: "00:00:00"
+  },
+
+  onInit() {
+    this.loadStats()
+    const seconds = this.durationSeconds(this.duration)
+    this.startCountdown(seconds > 0 ? seconds : 1200)
+    this.updateTime()
+    this.clockTimer = setInterval(() => this.updateTime(), 1000)
+  },
+
+  onDestroy() {
+    clearInterval(this.clockTimer)
+    clearInterval(this.countdownTimer)
+  },
+
+  startCountdown(seconds) {
+    clearInterval(this.countdownTimer)
+    this.focusDurationSeconds = seconds > 0 ? seconds : 1200
+    this.remaining = this.focusDurationSeconds
+    this.isResting = false
+    this.paused = false
+    this.updateCountdown()
+    this.countdownTimer = setInterval(() => this.tick(), 1000)
+  },
+
+  startRest() {
+    this.remaining = 300
+    this.isResting = true
+    this.paused = true
+    this.updateCountdown()
+  },
+
+  updateTime() {
+    const now = new Date()
+    const pad = (value) => (value < 10 ? `0${value}` : `${value}`)
+    this.time = `${pad(now.getHours())}:${pad(now.getMinutes())}`
+  },
+
+  tick() {
+    if (this.paused || this.remaining <= 0) return
+    this.remaining -= 1
+    if (this.isResting) this.restTotalSeconds += 1
+    else this.focusTotalSeconds += 1
+    this.updateStats()
+    this.persistStats()
+    this.updateCountdown()
+    if (this.remaining === 0) {
+      if (this.isResting) {
+        vibrator.vibrate({ mode: "short" })
+        this.startCountdown(this.focusDurationSeconds)
+      } else {
+        vibrator.vibrate({ mode: "long" })
+        this.startRest()
+      }
+    }
+  },
+
+  durationSeconds(config) {
+    if (config && config.indexOf("s:") === 0) return parseInt(config.substring(2), 10) || 5
+    if (config && config.indexOf("m:") === 0) return (parseInt(config.substring(2), 10) || 20) * 60
+    return (parseInt(config, 10) || 20) * 60
+  },
+
+  updateCountdown() {
+    const minutes = Math.floor(this.remaining / 60)
+    const seconds = this.remaining % 60
+    const pad = (value) => (value < 10 ? `0${value}` : `${value}`)
+    this.countdown = `${pad(minutes)}:${pad(seconds)}`
+  },
+
+  updateStats() {
+    this.focusTotalText = this.formatDuration(this.focusTotalSeconds)
+    this.restTotalText = this.formatDuration(this.restTotalSeconds)
+  },
+
+  formatDuration(totalSeconds) {
+    const hours = Math.floor(totalSeconds / 3600)
+    const minutes = Math.floor((totalSeconds % 3600) / 60)
+    const seconds = totalSeconds % 60
+    const pad = (value) => (value < 10 ? `0${value}` : `${value}`)
+    return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`
+  },
+
+  loadStats() {
+    file.readText({
+      uri: "internal://files/focus-stats.json",
+      success: (data) => {
+        try {
+          const stats = JSON.parse(data.text)
+          if (stats.date === this.today()) {
+            this.focusTotalSeconds = parseInt(stats.focus, 10) || 0
+            this.restTotalSeconds = parseInt(stats.rest, 10) || 0
+          }
+        } catch (error) {}
+        this.updateStats()
+      },
+      fail: () => this.updateStats()
+    })
+  },
+
+  persistStats() {
+    file.writeText({
+      uri: "internal://files/focus-stats.json",
+      text: JSON.stringify({
+        date: this.today(),
+        focus: this.focusTotalSeconds,
+        rest: this.restTotalSeconds
+      })
+    })
+  },
+
+  today() {
+    const now = new Date()
+    const pad = (value) => (value < 10 ? `0${value}` : `${value}`)
+    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
+  },
+
+  togglePause() { this.paused = !this.paused },
+  stopTimer() { router.back() }
+}
+</script>
+
+<style>
+.timer-swiper, .timer-page, .stats-page {
+  width: 480px;
+  height: 480px;
+  background-color: #000000;
+}
+
+.timer-page, .stats-page { position: relative; }
+
+.clock-label {
+  position: absolute;
+  left: 175px;
+  top: 0px;
+  width: 130px;
+  height: 45px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 33.6px;
+  text-align: center;
+}
+
+.page-title {
+  position: absolute;
+  left: 114px;
+  top: 41px;
+  width: 255px;
+  height: 45px;
+  color: #ffffff;
+  font-size: 30px;
+  font-weight: 500;
+  line-height: 44.8px;
+  text-align: center;
+}
+
+.countdown {
+  position: absolute;
+  left: 90px;
+  top: 172px;
+  width: 300px;
+  height: 97px;
+  color: #ffffff;
+  font-size: 64px;
+  font-weight: 500;
+  line-height: 84.86px;
+  text-align: center;
+}
+
+.focus-label {
+  position: absolute;
+  left: 90px;
+  top: 270px;
+  width: 300px;
+  height: 38px;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 32px;
+  font-weight: 500;
+  line-height: 42.43px;
+  text-align: center;
+}
+
+.stop-button, .pause-button {
+  position: absolute;
+  top: 373px;
+  width: 140px;
+  height: 69px;
+}
+
+.stop-button { left: 91px; }
+.pause-button { left: 251px; }
+
+.button-background {
+  position: absolute;
+  left: 0px;
+  top: 0px;
+  width: 140px;
+  height: 69px;
+}
+
+.stop-icon {
+  position: absolute;
+  left: 59px;
+  top: 23px;
+  width: 22px;
+  height: 24px;
+}
+
+.pause-icon {
+  position: absolute;
+  left: 53px;
+  top: 16px;
+  width: 35px;
+  height: 38px;
+}
+
+.stats-title, .stats-value {
+  position: absolute;
+  left: 90px;
+  width: 300px;
+  text-align: center;
+}
+
+.stats-title {
+  height: 43px;
+  font-size: 32px;
+  font-weight: 500;
+  line-height: 42.43px;
+}
+
+.stats-value {
+  height: 50px;
+  color: #ffffff;
+  font-size: 40px;
+  font-weight: 500;
+  line-height: 53.04px;
+}
+
+.focus-title { top: 141px; color: rgba(112, 119, 255, 1); }
+.focus-value { top: 184px; }
+.rest-title { top: 240px; color: rgba(149, 168, 0, 1); }
+.rest-value { top: 283px; }
+</style>

@@ -1,0 +1,73 @@
+{
+  "package": "cn.seedsoft.tmtclock",
+  "name": "番茄钟",
+  "versionName": "1.0.0",
+  "versionCode": 1,
+  "minPlatformVersion": 1000,
+  "icon": "/common/logo.png",
+  "deviceTypeList": [
+    "watch"
+  ],
+  "features": [
+    {
+      "name": "system.router"
+    },
+    {
+      "name": "system.device"
+    },
+    {
+      "name": "system.file"
+    },
+    {
+      "name": "system.vibrator"
+    },
+    {
+      "name": "system.audio"
+    }
+  ],
+  "config": {
+    "logLevel": "log",
+    "designWidth": "device-width",
+    "background": {
+      "features": ["system.audio"]
+    }
+  },
+  "router": {
+    "entry": "pages/index",
+    "pages": {
+      "pages/index": {
+        "component": "index"
+      },
+      "pages/detail": {
+        "component": "detail"
+      },
+      "pages/s4": {
+        "component": "s4"
+      },
+      "pages/s5/home": {
+        "component": "home"
+      },
+      "pages/s5/picker": {
+        "component": "picker"
+      },
+      "pages/s5/timer": {
+        "component": "timer"
+      },
+      "pages/5/home": {
+        "component": "home"
+      },
+      "pages/5/picker": {
+        "component": "picker"
+      },
+      "pages/5/timer": {
+        "component": "timer"
+      },
+      "pages/s4-picker": {
+        "component": "s4-picker"
+      },
+      "pages/s4-timer": {
+        "component": "s4-timer"
+      }
+    }
+  }
+}
